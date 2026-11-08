@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilot I+D Simulador</title>
+<style>
+:root{--bg:#f3f5f7;--panel:#fff;--ink:#1b2430;--muted:#5b6675;--line:#dde3ea;--brand:#3f7a52;--brand-ink:#fff;--accent:#e9f3ec;--warn-bg:#fff6e5;--warn-ink:#8a4b00;--bad-bg:#fdecec;--bad-ink:#a12828;--ok-bg:#e7f5ec;--ok-ink:#1f6b3a;--info-bg:#e8f0fb;--info-ink:#1f4e8a;--mark:#fff0a0;--bot:#f0f3f6}
+@media (prefers-color-scheme:dark){:root{--bg:#12161b;--panel:#1b2129;--ink:#e6ebf0;--muted:#9aa6b2;--line:#2c3540;--brand:#6bb787;--brand-ink:#0c1a12;--accent:#1f2e27;--warn-bg:#3a2c12;--warn-ink:#f3c27a;--bad-bg:#3a1c1c;--bad-ink:#f2a3a3;--ok-bg:#16301f;--ok-ink:#8fd6a8;--info-bg:#18273c;--info-ink:#9cc3f5;--mark:#6a5a12;--bot:#232b35}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+header{background:var(--brand);color:var(--brand-ink);padding:14px 20px}
+header h1{margin:0;font-size:20px}
+header p{margin:2px 0 0;font-size:13px;opacity:.9}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.sim{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:20px;cursor:pointer;font:inherit;font-size:14px}
+nav button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+#chat{height:58vh;min-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;white-space:normal}
+.msg.u{align-self:flex-end;background:var(--brand);color:var(--brand-ink);border-bottom-right-radius:3px}
+.msg.b{align-self:flex-start;background:var(--bot);border-bottom-left-radius:3px}
+.msg .meta{font-size:11.5px;color:var(--muted);margin-top:6px}
+.msg .src{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);font-size:13px}
+.msg .src ol{margin:4px 0 0;padding-left:20px}
+.msg .note{font-size:12.5px;color:var(--muted);margin-top:6px;font-style:italic}
+.cite{display:inline-block;font-size:11px;background:var(--info-bg);color:var(--info-ink);border-radius:4px;padding:0 5px;margin-left:3px;vertical-align:1px}
+.typing{color:var(--muted);font-style:italic}
+.ask{display:flex;gap:8px;margin-top:10px}
+.ask input,textarea,.cfg input{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}
+textarea{width:100%;min-height:80px;resize:vertical}
+.btn{background:var(--brand);color:var(--brand-ink);border:0;border-radius:8px;padding:9px 16px;cursor:pointer;font:inherit;font-weight:600}
+.btn.sec{background:transparent;color:var(--brand);border:1px solid var(--brand)}
+.btn:disabled{opacity:.5;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--accent);color:var(--ink);border-radius:16px;padding:5px 11px;font-size:13px;cursor:pointer;text-align:left;font:inherit;font-size:13px}
+.tests h3,.panel h2{margin:0 0 8px;font-size:16px}
+.tests button{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 10px;margin-bottom:6px;cursor:pointer;font:inherit;font-size:13px}
+.tests button b{display:block;font-size:11.5px;color:var(--brand)}
+.tests p{font-size:12px;color:var(--muted);margin:8px 0 0}
+mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+.res{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;display:grid;grid-template-columns:38px 1fr;gap:10px}
+.pos{width:34px;height:34px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:700}
+.res h4{margin:0;font-size:15px}
+.res .m{font-size:12.5px;color:var(--muted)}
+.res blockquote{margin:6px 0 0;padding:6px 10px;border-left:3px solid var(--brand);background:var(--bot);border-radius:0 6px 6px 0;font-size:14px}
+.empty{background:var(--bad-bg);color:var(--bad-ink);border-radius:8px;padding:12px 14px;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.tbl{overflow-x:auto}
+.badge{display:inline-block;border-radius:10px;padding:1px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-bg);color:var(--ok-ink)}.b-bad{background:var(--bad-bg);color:var(--bad-ink)}.b-warn{background:var(--warn-bg);color:var(--warn-ink)}.b-info{background:var(--info-bg);color:var(--info-ink)}
+.cfg{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 14px}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--brand);transition:width 3s linear}
+#log{font-size:12.5px;color:var(--muted);margin-top:10px;max-height:150px;overflow-y:auto}
+.alert{border-radius:8px;padding:10px 12px;margin-top:10px;font-size:14px}
+.hide{display:none}
+.small{font-size:13px;color:var(--muted)}
+ul.rules li{margin-bottom:4px}
+a{color:var(--info-ink)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Copilot I+D</h1>
+  <p>Asistente de consulta técnica · Prototipo Sprint 1 · Equipo 5 · MAGI4304</p>
+</header>
+<div class="wrap">
+  <div class="sim"><b>Simulación funcional del agente.</b> Reemplaza a Copilot Studio en el prototipo porque la licencia universitaria no lo habilita (resultado de la prueba técnica SPK01). Busca sobre el texto de los documentos sintéticos del corpus autorizado, en este navegador, sin IA generativa ni internet. Todos los datos son ficticios.</div>
+
+  <nav>
+    <button data-tab="t-chat" class="on">Asistente · HU002</button>
+    <button data-tab="t-ant">Antecedentes · HU003</button>
+    <button data-tab="t-corpus">Corpus autorizado · HU004</button>
+    <button data-tab="t-inst">Instrucciones y configuración</button>
+  </nav>
+
+  <!-- HU002 -->
+  <section id="t-chat" class="grid">
+    <div class="panel">
+      <div id="chat"></div>
+      <form class="ask" id="askForm">
+        <input id="q" autocomplete="off" placeholder="Escribe tu consulta técnica en español…" aria-label="Consulta">
+        <button class="btn" type="submit">Enviar</button>
+      </form>
+      <div class="chips"><button class="chip" type="button" id="newChat">Nueva conversación</button></div>
+    </div>
+    <aside class="panel tests">
+      <h3>Pruebas de aceptación</h3>
+      <div id="testList"></div>
+      <p>Cada botón envía la pregunta al asistente. Para el CA5, envía primero la consulta base y luego el seguimiento. Para el CA4 de la HU004, sincroniza el CASO-08 en la pestaña Corpus.</p>
+    </aside>
+  </section>
+
+  <!-- HU003 -->
+  <section id="t-ant" class="panel hide">
+    <h2>Buscar antecedentes técnicos</h2>
+    <p class="small">Describe el desarrollo actual o pega la descripción de la solicitud. El asistente devuelve de 1 a 5 documentos del corpus autorizado, ordenados por relación, con enlace y fragmento citado.</p>
+    <textarea id="antQ" placeholder="Ej.: ampollas en recubrimiento de poliuretano sobre tejido"></textarea>
+    <div class="chips" id="antPresets"></div>
+    <div class="ask"><button class="btn" id="antBtn" type="button">Buscar antecedentes</button><button class="btn sec" id="ca2Btn" type="button">Ejecutar set de validación (CA2)</button></div>
+    <div id="antOut"></div>
+  </section>
+
+  <!-- HU004 -->
+  <section id="t-corpus" class="panel hide">
+    <h2>Corpus autorizado I+D</h2>
+    <p class="small">Solo se consultan los documentos con estado <b>Indexado</b>: biblioteca «Corpus autorizado I+D», estado Autorizado y metadatos completos.</p>
+    <div class="cfg">
+      <label for="libUrl" class="small">URL de la biblioteca en SharePoint (para los enlaces):</label>
+      <input id="libUrl" placeholder="https://…sharepoint.com/sites/…/Corpus%20Autorizado%20ID">
+      <button class="btn sec" id="saveUrl" type="button">Guardar</button>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Caso</th><th>Archivo</th><th>Biblioteca</th><th>Metadatos</th><th>Estado en el índice</th><th>Acción</th></tr></thead>
+      <tbody id="corpusRows"></tbody>
+    </table></div>
+    <div class="ask"><button class="btn" id="syncBtn" type="button">Sincronizar corpus</button><button class="btn sec" id="resetBtn" type="button">Restablecer demostración</button></div>
+    <div class="bar" id="bar"><i></i></div>
+    <div id="corpusMsg"></div>
+    <div id="log"></div>
+  </section>
+
+  <!-- Instrucciones -->
+  <section id="t-inst" class="panel hide">
+    <h2>Instrucciones del agente</h2>
+    <ul class="rules">
+      <li>Responde siempre en español, en máximo 250 palabras.</li>
+      <li>Usa únicamente los documentos del corpus autorizado I+D. No usa búsqueda web ni conocimiento general.</li>
+      <li>Cita en cada respuesta el caso, el tipo de documento, la versión y la fecha.</li>
+      <li>Si no hay respaldo, responde exactamente: «No encontré información respaldada en el corpus autorizado. Reformula la pregunta o consulta al jefe de I+D.»</li>
+      <li>Si la pregunta no es clara, pide precisión y da un ejemplo.</li>
+      <li>Si la pregunta está fuera del ámbito técnico de I+D, indica el alcance del asistente.</li>
+      <li>En preguntas de seguimiento usa el antecedente anterior de la conversación, sin inventar datos.</li>
+      <li>El asistente propone; la decisión técnica la toma el especialista.</li>
+    </ul>
+    <h2 style="margin-top:16px">Configuración de conocimiento</h2>
+    <div class="tbl"><table><tbody>
+      <tr><th>Fuente de conocimiento</th><td>Biblioteca «Corpus autorizado I+D»</td></tr>
+      <tr><th>Biblioteca excluida</th><td>«Documentos en revisión»</td></tr>
+      <tr><th>Búsqueda web</th><td><span class="badge b-bad">Desactivada</span></td></tr>
+      <tr><th>Conocimiento general</th><td><span class="badge b-bad">Desactivado</span></td></tr>
+      <tr><th>Resultados de antecedentes</th><td>De 1 a 5 documentos únicos, ordenados por relación</td></tr>
+    </tbody></table></div>
+    <h2 style="margin-top:16px">Cómo funciona la simulación</h2>
+    <p class="small">El asistente divide el texto de cada documento en fragmentos y los compara con la consulta usando palabras clave normalizadas (sin tildes, singular y plural) y un diccionario de sinónimos técnicos, por ejemplo «desgaste» ↔ «abrasión» o «ampollas» ↔ «burbujas». Las respuestas se arman solo con fragmentos textuales de los documentos, por eso no puede inventar datos. Si la consulta no queda cubierta por el corpus, muestra el mensaje de ausencia de respaldo.</p>
+  </section>
+</div>
+
+<script>
+/*ENGINE-START*/
+const NO_BACKING = 'No encontré información respaldada en el corpus autorizado. Reformula la pregunta o consulta al jefe de I+D.';
+const NO_ANTEC = 'No encontré antecedentes relacionados en el corpus autorizado';
+const APROB = 'Sergio Díaz (jefe de I+D en el prototipo)';
+
+const DOCS = [
+ {id:'CASO-01', file:'CASO-01_Formulacion_Abrasion-tapiceria-PVC_v1.2_2025-03-14.docx', tipo:'Formulación', material:'Cuero sintético PVC para tapicería automotriz', tema:'Abrasión tapicería PVC', version:'v1.2', fecha:'14/03/2025', estado:'Autorizado', aprob:APROB, lib:'aut', chunks:[
+  ['1. Objetivo','Formulación base de cuero sintético de PVC para tapicería automotriz con alta resistencia a la abrasión, es decir, menor desgaste del acabado en asientos de uso intensivo, manteniendo flexibilidad en frío.'],
+  ['2. Estructura del material','Estructura de 1,20 mm: laca superior de poliuretano mate de 12 g/m², piel de PVC compacto de 0,25 mm, espuma de PVC de 0,70 mm y soporte de tejido de punto de poliéster de 120 g/m².'],
+  ['3. Formulación de la piel','Formulación de la piel en phr: resina PVC en emulsión K70 100, plastificante DINP 65, aceite de soya epoxidado 5, estabilizante Ca/Zn 3, carbonato de calcio 20 y pigmento gris grafito 4.'],
+  ['4. Resultados','Abrasión Taber (rueda CS-10, 1.000 g, 1.000 ciclos): pérdida de masa de 45 mg en la v1.2 frente a 64 mg en la v1.1; el requisito es máximo 60 mg.'],
+  ['4. Resultados','Abrasión Martindale a 50.000 ciclos: sin desgaste visible (grado 4) en la v1.2; la v1.1 tenía desgaste leve (grado 3).'],
+  ['4. Resultados','Flexión en frío a −10 °C durante 30.000 ciclos sin grietas; tracción de 450 N y desgarro de 60 N, por encima de los requisitos.'],
+  ['5. Cambios frente a la v1.1','Se aumentó la laca superior de 8 a 12 g/m²; con este cambio la resistencia a la abrasión mejoró cerca de un 30 % (pérdida de masa de 64 a 45 mg) sin afectar la flexión en frío.'],
+  ['6. Limitaciones y recomendación','No se evaluó la emisión de olor en cabina y no se recomienda para exteriores con exposición solar prolongada. Recomendación: usar la v1.2 como formulación de referencia para tapicería automotriz de uso intensivo.']]},
+ {id:'CASO-02', file:'CASO-02_InformeEnsayo_UV-vinilo-nautico_v1.0_2025-06-02.pdf', tipo:'Informe de ensayo', material:'Vinilo náutico', tema:'Resistencia UV e hidrólisis', version:'v1.0', fecha:'02/06/2025', estado:'Autorizado', aprob:APROB, lib:'aut', chunks:[
+  ['1. Objetivo','Evaluar el cambio de color y la pérdida de resistencia de un vinilo náutico blanco de 0,9 mm después de envejecimiento acelerado UV e hidrólisis, en tres lotes de producción.'],
+  ['2. Muestras','Los lotes L-2505-A y L-2505-B tenían 0,5 phr de absorbedor UV (benzotriazol) y 0,3 phr de estabilizante HALS; el lote L-2505-C tenía 0,2 phr de absorbedor UV por un error de dosificación.'],
+  ['3. Métodos','Envejecimiento UV con lámparas UV de 340 nm durante 500 horas (referencia ASTM G154) e hidrólisis a 70 °C y 95 % de humedad relativa durante 7 días (prueba de jungla).'],
+  ['4. Resultados','Cambio de color ΔE después de 500 h UV: L-2505-A 2,1; L-2505-B 2,6; L-2505-C 4,3. Retención de tracción después de hidrólisis: 92 %, 89 % y 78 %. Requisitos: ΔE máximo 3 y retención mínima de 85 %.'],
+  ['5. Conclusión','Los lotes L-2505-A y L-2505-B cumplen. El lote L-2505-C no cumple: presentó amarillamiento (ΔE 4,3) y menor resistencia por dosificar 0,2 phr de absorbedor UV en lugar de 0,5 phr. Se recomienda mantener 0,5 phr y verificar la dosificación en el registro de lote.']]},
+ {id:'CASO-03', file:'CASO-03_PruebaIndustrial_Burbujas-recubrimiento-PU_v2.0_2025-08-21.pdf', tipo:'Prueba industrial', material:'Recubrimiento PU sobre tejido de poliéster (línea 2)', tema:'Burbujas en recubrimiento PU', version:'v2.0', fecha:'21/08/2025', estado:'Autorizado', aprob:APROB, lib:'aut', chunks:[
+  ['1. Problema','La línea 2 presentaba burbujas (ampollas) en el recubrimiento de poliuretano sobre tejido de poliéster de 150 g/m²: 4,5 defectos por metro lineal y 7 % de rechazo.'],
+  ['2. Condiciones de la prueba','Condiciones ajustadas: velocidad de línea de 18 a 15 m/min, temperatura del horno en la zona 1 de 140 a 120 °C, viscosidad de la pasta de 6.000 a 4.500 cP, desaireación de la pasta al vacío durante 20 minutos y presecado del tejido hasta humedad menor a 1 %.'],
+  ['3. Resultados','Los defectos bajaron de 4,5 a 0,6 por metro lineal y el rechazo de 7 % a 1,2 %; la productividad bajó a 83 % por la menor velocidad de línea.'],
+  ['4. Causa y lecciones aprendidas','Causa principal: aire atrapado en la pasta y evaporación brusca del solvente en la zona 1 del horno. La desaireación y la menor temperatura en la zona 1 fueron los cambios con mayor efecto.'],
+  ['4. Recomendación','Se recomienda adoptar las condiciones ajustadas como estándar y evaluar recuperar velocidad (16 a 17 m/min) en una prueba posterior.']]},
+ {id:'CASO-04', file:'CASO-04_NotaTecnica_Plastificante-sin-ftalatos_v1.1_2025-10-09.docx', tipo:'Nota técnica', material:'Vinilo para línea infantil', tema:'Cambio a plastificante libre de ftalatos', version:'v1.1', fecha:'09/10/2025', estado:'Autorizado', aprob:APROB, lib:'aut', chunks:[
+  ['1. Contexto','Un cliente de artículos infantiles (colchonetas y cambiadores) pidió eliminar los ortoftalatos; se reemplazó el plastificante DINP por DOTP (tereftalato de dioctilo), que no es un ortoftalato.'],
+  ['2. Efectos observados','Dureza Shore A: DINP 65 phr 78; DOTP 65 phr 81; DOTP 70 phr 78. Migración del plastificante (pérdida de masa 24 h a 70 °C): 1,4 %, 0,9 % y 1,0 %. Sin grietas en flexión en frío a −10 °C.'],
+  ['2. Costo','Costo relativo de la formulación: DINP 100 %, DOTP 65 phr 105 % y DOTP 70 phr 108 %, es decir, un aumento del 8 %.'],
+  ['3. Recomendaciones y restricciones','Se recomienda usar DOTP a 70 phr para igualar la dureza de la formulación con DINP; no mezclar lotes con DINP y con DOTP en la misma corrida sin purgar el equipo, y verificar con el cliente la normativa aplicable.']]},
+ {id:'CASO-05', file:'CASO-05_InformeEnsayo_Abrasion-flexion-PU-calzado_v1.0_2026-02-17.xlsx', tipo:'Informe de ensayo', material:'Cuero sintético PU para calzado', tema:'Abrasión Martindale y flexión', version:'v1.0', fecha:'17/02/2026', estado:'Autorizado', aprob:APROB, lib:'aut', chunks:[
+  ['Resumen · Objetivo','Comparar la resistencia a la abrasión (desgaste por roce) y a la flexión de tres lotes de cuero sintético PU para capellada de calzado. Requisitos: Martindale mínimo 40.000 ciclos sin desgaste visible y flexión Bally mínimo 100.000 ciclos sin grietas.'],
+  ['Resultados','Lote PU-CZ-01 (capa de acabado de 25 g/m²): 40.000 ciclos Martindale y 100.000 de flexión, cumple en el límite. Lote PU-CZ-02 (35 g/m²): 60.000 ciclos y 150.000 de flexión, mejor resistencia a la abrasión. Lote PU-CZ-03 (18 g/m², 1,0 mm): 25.000 ciclos y grietas a 80.000, no cumple.'],
+  ['Resumen · Conclusión','Se recomienda el lote PU-CZ-02. El lote PU-CZ-03 no cumple por desgaste temprano y grietas en flexión, asociados a menor espesor de la capa de acabado.']]},
+ {id:'CASO-06', file:'CASO-06_NotaTecnica_Antimicrobiano-tapiceria-hospitalaria_v0.3_2026-09-30.docx', tipo:'Nota técnica', material:'Tapicería hospitalaria en PVC', tema:'Aditivo antimicrobiano', version:'v0.3', fecha:'30/09/2026', estado:'En revisión', aprob:'', lib:'rev', chunks:[
+  ['1. Resultado preliminar','Se evaluó un aditivo antimicrobiano a base de iones de plata a 1,5 phr. El ensayo preliminar mostró una reducción bacteriana del 99 % a 24 horas.']]},
+ {id:'CASO-07', file:'CASO-07_InformeEnsayo_Retardante-llama.docx', tipo:'Informe de ensayo', material:'Tapicería PVC para transporte', tema:'Retardante de llama', version:'', fecha:'', estado:'', aprob:'', lib:'pru', chunks:[
+  ['1. Resultado','Con 5 phr de trióxido de antimonio como retardante de llama, la velocidad de combustión horizontal fue de 45 mm/min.']]},
+ {id:'CASO-08', file:'CASO-08_NotaTecnica_Pigmento-negro-bajo-olor_v1.0_2026-10-20.docx', tipo:'Nota técnica', material:'Tapicería PVC negra para automotriz', tema:'Pigmento negro de bajo olor', version:'v1.0', fecha:'20/10/2026', estado:'Autorizado', aprob:APROB, lib:'pru', chunks:[
+  ['1. Resultado','Se reemplazó el negro de humo estándar por un negro de carbono con tratamiento superficial de bajo olor, a 4 phr. La evaluación de olor (referencia VDA 270) bajó de grado 3,5 a grado 2,5, sin cambio de color visible.'],
+  ['2. Recomendación','Se recomienda usar el pigmento negro de bajo olor en tapicería automotriz negra cuando el cliente pida control de olor en cabina.']]}
+];
+
+const STOP = new Set(('a al algo alguna alguno algun ante aqui asi cada como con cual cuales cuando cuanto cuanta cuantos cuantas de del desde donde e el ella ellas ellos en entre era es esa esas ese eso esos esta estas este esto estos fue fueron ha han hay hace hacer la las le les lo los mas me mi mis muy ni no nos o para pero por porque que quien quienes se ser si sin sobre su sus tambien tiene tienen tuvo tuvieron un una uno unos unas y ya u puedes puede podria podrias dame dime decir quiero quisiera necesito saber existe existen hubo tenemos tengo menos usar usa usan hola gracias favor mediante segun buenas buenos dias tardes noches').split(' '));
+
+// Sinónimos técnicos: palabra normalizada -> forma canónica
+const SYN = {desgaste:'abrasion',desgastado:'abrasion',gastado:'abrasion',gastada:'abrasion',roce:'abrasion',rozamiento:'abrasion',
+ ultravioleta:'uv',sol:'uv',solar:'uv',intemperie:'uv',amarillo:'amarillamiento',amarillento:'amarillamiento',amarilleo:'amarillamiento',
+ ampolla:'burbuja',poro:'burbuja',burbuja:'burbuja',
+ ftalato:'plastificante',ortoftalato:'plastificante',
+ zapato:'calzado',capellada:'calzado',
+ asiento:'tapiceria',silla:'tapiceria',tapizado:'tapiceria',
+ bote:'nautico',barco:'nautico',lancha:'nautico',marino:'nautico',marina:'nautico',nautica:'nautico',yate:'nautico',
+ poliuretano:'pu',vinilico:'vinilo',precio:'costo',coste:'costo',olore:'olor',
+ vehiculo:'automotriz',automovil:'automotriz',carro:'automotriz',auto:'automotriz',automotor:'automotriz',
+ nino:'infantil',bebe:'infantil',infantile:'infantil',agrietamiento:'grieta',fisura:'grieta'};
+
+const GENERIC_WORDS = 'pvc pu vinilo cuero sintetico material producto informe ensayo prueba resultado dato caso documento lote valor tipo tema version corpus antecedente informacion tecnico tecnica desarrollo problema propiedad cambio resistencia linea uso evaluacion evaluar relacionado similar comparar validacion referencia muestra patron'.split(' ');
+const DOMAIN_EXTRA = 'llama retardante antimicrobiano cuero textil tejido resina polimero aditivo quimico norma laboratorio curado espesor adhesion rasgado elongacion densidad reologia solvente secado horno calandra espumado laminado tintura acabado brillo transicion vitrea emision formaldehido biobasado reciclado sostenible competencia becerro gramaje muestra especificacion cliente calidad defecto proceso produccion planta maquina temperatura presion velocidad viscosidad costo formulacion receta_no'.split(' ');
+const OFFTOPIC = new Set('futbol partido gano clima lluvia receta cocina comida pelicula serie musica cancion chiste presidente elecciones capital pais bitcoin criptomoneda horoscopo deporte noticias restaurante viaje vacaciones poema cuento novia novio'.split(' '));
+const FOLLOW = new Set('ese esa este esta eso esos esas estos estas anterior mismo misma dicho dicha ahi alli su sus'.split(' '));
+
+const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const WORD_RE = /[\p{L}\p{N}]+(?:[-.][\p{L}\p{N}]+)*/gu;
+
+function canon(w) {
+  if (SYN[w]) w = SYN[w];
+  if (/\d/.test(w)) return w;
+  if (w.length > 3 && w.endsWith('s')) w = w.slice(0, -1);
+  if (SYN[w]) w = SYN[w];
+  return w.length > 5 ? w.slice(0, 5) : w;
+}
+// Códigos con números (L-2505-C, PU-CZ-02) quedan como un token; las demás palabras con guion se separan
+function parts(raw) {
+  const n = normalize(raw);
+  return /\d/.test(n) ? [n.replace(/[-.]/g, '')] : n.split(/[-.]/);
+}
+function stems(text) {
+  const out = [];
+  for (const m of text.match(WORD_RE) || []) for (const n of parts(m)) {
+    if (n.length < 2 || STOP.has(n)) continue;
+    out.push(canon(n));
+  }
+  return out;
+}
+function rawWords(text) { return (text.match(WORD_RE) || []).flatMap(parts); }
+
+const GENERIC = new Set(GENERIC_WORDS.map(canon));
+let DOMAIN = new Set();
+
+function buildIndex() {
+  for (const d of DOCS) {
+    d._c = d.chunks.map(([sec, text]) => ({sec, text, set: new Set(stems(text))}));
+    d._meta = new Set(stems(`${d.tipo} ${d.material} ${d.tema}`));
+  }
+  DOMAIN = new Set([...DOCS.flatMap(d => d._c.flatMap(c => [...c.set])), ...DOCS.flatMap(d => [...d._meta]), ...DOMAIN_EXTRA.map(canon)]);
+}
+function resetStatus() {
+  for (const d of DOCS) d.status = d.lib === 'aut' ? 'indexado' : d.lib === 'rev' ? 'excluido' : 'pendiente';
+}
+const indexed = () => DOCS.filter(d => d.status === 'indexado');
+
+function rank(q, docs) {
+  const qs = [...new Set(stems(q))];
+  const spec = qs.filter(t => !GENERIC.has(t));
+  const chunks = docs.flatMap(d => d._c);
+  const w = {};
+  for (const t of qs) {
+    if (GENERIC.has(t)) { w[t] = 0.3; continue; }
+    const df = chunks.filter(c => c.set.has(t)).length;
+    w[t] = 1 + Math.log((chunks.length + 1) / (df + 1));
+  }
+  const res = docs.map(d => {
+    const scored = d._c.map(c => {
+      let s = 0; const hits = [];
+      for (const t of qs) {
+        if (c.set.has(t)) { s += w[t]; hits.push(t); }
+        else if (d._meta.has(t)) s += 0.5 * w[t];
+      }
+      return {c, s, hits};
+    }).sort((a, b) => b.s - a.s);
+    const matched = spec.filter(t => d._meta.has(t) || d._c.some(c => c.set.has(t))).length;
+    return {d, scored, matched, coverage: spec.length ? matched / spec.length : 0,
+            score: (scored[0] ? scored[0].s : 0) + 0.25 * (scored[1] ? scored[1].s : 0)};
+  }).sort((a, b) => b.score - a.score);
+  return {qs, spec, res};
+}
+
+// ---------- HU002: respuesta del asistente
+let ctx = [];
+const EXAMPLE = '«¿Qué cambio mejoró la resistencia a la abrasión de la tapicería de PVC?»';
+
+function pick(r, list, followUp) {
+  const spec = new Set(r.spec);
+  const blocks = []; let words = 0;
+  for (const x of list) {
+    const withHits = x.scored.filter(s => s.hits.length);
+    const sel = [withHits[0] || x.scored[0]];
+    const second = withHits[1];
+    if (second && second.s >= 0.7 * sel[0].s && second.hits.some(t => spec.has(t))) sel.push(second);
+    const texts = [];
+    for (const s of sel) {
+      const n = s.c.text.split(/\s+/).length;
+      if (words + n > 200 && texts.length) break;
+      texts.push(s.c); words += n;
+    }
+    blocks.push({d: x.d, chunks: texts});
+    if (words > 200) break;
+  }
+  ctx = blocks.map(b => b.d);
+  return {type: 'answer', followUp, blocks, spec: r.spec};
+}
+
+function search(q) {
+  const content = stems(q);
+  if (content.every(t => GENERIC.has(t))) return {type: 'unclear'};
+  if (!content.some(t => DOMAIN.has(t))) return {type: 'out'};
+  const r = rank(q, indexed());
+  const top = r.res[0];
+  if (!top || top.matched === 0 || top.coverage < 0.6) return {type: 'nobacking'};
+  const list = r.res.filter(x => x.matched > 0 && x.coverage >= 0.6 && x.score >= 0.6 * top.score).slice(0, 3);
+  return pick(r, list, false);
+}
+
+function answer(q) {
+  const n = normalize(q).replace(/^[^\p{L}\p{N}]+/u, '');
+  const raw = rawWords(q);
+  const content = stems(q);
+  if (!content.length) return {type: 'unclear'};
+  if (raw.some(x => OFFTOPIC.has(x))) return {type: 'out'};
+  const live = ctx.filter(d => d.status === 'indexado');
+  const follow = live.length && (/^(y|e)\s/.test(n) || raw.some(x => FOLLOW.has(x)));
+  if (follow) {
+    const r = rank(q, live);
+    const hits = r.res.filter(x => x.scored[0] && x.scored[0].hits.length);
+    if (hits.length) { const prev = live.map(d => d.id); const a = pick(r, hits.slice(0, 1), true); a.prev = prev; return a; }
+    const g = search(q);
+    if (g.type === 'answer') return g;
+    return {type: 'nobacking', prev: live.map(d => d.id)};
+  }
+  return search(q);
+}
+
+// ---------- HU003: antecedentes
+function antecedentes(q) {
+  const r = rank(q, indexed());
+  const c = r.res.filter(x => x.matched > 0);
+  if (!c.length) return {r, list: []};
+  const top = c[0];
+  if (r.spec.length <= 3 && top.coverage < 0.5) return {r, list: []};
+  return {r, list: c.filter(x => x.score >= 0.3 * top.score).slice(0, 5)};
+}
+const CA2_SET = [
+  {q: 'desgaste en asientos de vehículos', exp: 'CASO-01'},
+  {q: 'amarillamiento por sol en vinilo para botes', exp: 'CASO-02'},
+  {q: 'ampollas en recubrimiento de poliuretano', exp: 'CASO-03'},
+  {q: 'reemplazar ftalatos en productos infantiles', exp: 'CASO-04'},
+  {q: 'resistencia a la abrasión en calzado', exp: 'CASO-05'}
+];
+buildIndex(); resetStatus();
+/*ENGINE-END*/
+
+// ---------- Interfaz
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+let LIB_URL = store('copilotid.libUrl') || '';
+
+function highlight(text, spec) {
+  const set = new Set(spec); let out = '', last = 0;
+  for (const m of text.matchAll(WORD_RE)) {
+    const hit = parts(m[0]).some(n => n.length >= 2 && !STOP.has(n) && set.has(canon(n)));
+    out += esc(text.slice(last, m.index)) + (hit ? `<mark>${esc(m[0])}</mark>` : esc(m[0]));
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+function docLink(d) {
+  if (!LIB_URL) return `<span title="Configura la URL de la biblioteca en la pestaña Corpus">${esc(d.file)}</span>`;
+  const href = LIB_URL.replace(/\/+$/, '') + '/' + encodeURIComponent(d.file) + '?web=1';
+  return `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(d.file)}</a>`;
+}
+const cite = d => `${d.id} · ${d.tipo} · ${d.version} · ${d.fecha}`;
+
+// Tabs
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('hide', s.id !== b.dataset.tab));
+});
+
+// Chat
+const chat = $('#chat');
+function addMsg(cls, html) { const el = document.createElement('div'); el.className = 'msg ' + cls; el.innerHTML = html; chat.appendChild(el); chat.scrollTop = chat.scrollHeight; return el; }
+function welcome() {
+  chat.innerHTML = ''; ctx = [];
+  const ex = ['¿Qué cambio mejoró la resistencia a la abrasión de la tapicería de PVC?', '¿Por qué el lote L-2505-C de vinilo náutico no cumplió?', '¿Cómo se redujeron las burbujas en el recubrimiento PU de la línea 2?'];
+  const el = addMsg('b', `Hola, soy <b>Copilot I+D</b>. Respondo consultas técnicas sobre formulaciones, materiales, ensayos y procesos usando solo el corpus autorizado de I+D, y cito siempre la fuente. Prueba con alguna de estas preguntas:<div class="chips">${ex.map(e => `<button class="chip" type="button">${esc(e)}</button>`).join('')}</div>`);
+  el.querySelectorAll('.chip').forEach(c => c.onclick = () => send(c.textContent));
+}
+function render(a) {
+  if (a.type === 'unclear') return `No entendí bien tu consulta. ¿Puedes precisar el material, el proceso o la propiedad que te interesa? Por ejemplo: ${EXAMPLE}`;
+  if (a.type === 'out') return `Solo puedo responder consultas técnicas de I+D sobre formulaciones, materiales, ensayos y procesos, con base en el corpus autorizado. Por ejemplo: ${EXAMPLE}`;
+  if (a.type === 'nobacking') return (a.prev ? `En el antecedente anterior (${esc(a.prev.join(', '))}) no encontré ese dato.<br>` : '') + esc(NO_BACKING);
+  let h = a.followUp ? `<div>Sobre el antecedente anterior (${esc(a.prev.join(', '))}):</div>` : '<div>Encontré respaldo en el corpus autorizado:</div>';
+  a.blocks.forEach((b, i) => {
+    h += `<p style="margin:8px 0 0"><b>${esc(b.d.id)} · ${esc(b.d.tema)}.</b> ` + b.chunks.map(c => highlight(c.text, a.spec)).join(' ') + `<span class="cite">[${i + 1}]</span></p>`;
+  });
+  h += '<div class="src"><b>Fuentes</b><ol>' + a.blocks.map(b => `<li>${esc(cite(b.d))} — ${docLink(b.d)}<br><span class="small">Sección: ${esc(b.chunks.map(c => c.sec).join('; '))}</span></li>`).join('') + '</ol></div>';
+  h += '<div class="note">Esta respuesta es un apoyo; la decisión técnica corresponde al especialista.</div>';
+  return h;
+}
+function send(text) {
+  text = text.trim(); if (!text) return;
+  addMsg('u', esc(text)); $('#q').value = '';
+  const t0 = performance.now();
+  const wait = addMsg('b typing', 'Buscando en el corpus autorizado…');
+  setTimeout(() => {
+    const a = answer(text);
+    wait.className = 'msg b';
+    const secs = ((performance.now() - t0) / 1000).toFixed(1).replace('.', ',');
+    wait.innerHTML = render(a) + `<div class="meta">Tiempo de respuesta: ${secs} s</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }, 700 + Math.random() * 700);
+}
+$('#askForm').onsubmit = e => { e.preventDefault(); send($('#q').value); };
+$('#newChat').onclick = welcome;
+
+const TESTS = [
+  ['HU002 · CA1 Pregunta normal', '¿Qué cambio mejoró la resistencia a la abrasión de la tapicería de PVC?'],
+  ['HU002 · CA2 Sinónimo («desgaste»)', '¿Qué cambio redujo el desgaste de la tapicería de PVC?'],
+  ['HU002 · CA3 Mensaje poco claro', 'hola, necesito un dato'],
+  ['HU002 · CA4 Fuera de dominio', '¿Quién ganó el partido de fútbol ayer?'],
+  ['HU002 · CA5 Consulta base', '¿Cómo se redujeron las burbujas en el recubrimiento PU de la línea 2?'],
+  ['HU002 · CA5 Seguimiento', '¿Y cuánto bajó la productividad?'],
+  ['HU002 · CA6 Sin respaldo', '¿Hay antecedentes de cuero de origen vegetal?'],
+  ['HU004 · CA1 Respuesta solo fuera del corpus', '¿Cuál es la temperatura de transición vítrea del PVC?'],
+  ['HU004 · CA3 Documento en revisión', '¿Qué resultados tuvo el aditivo antimicrobiano?'],
+  ['HU004 · CA4 Documento nuevo (antes y después de sincronizar)', '¿Qué resultado tuvo el negro de carbono de bajo olor?']
+];
+$('#testList').innerHTML = TESTS.map(([l, q]) => `<button type="button" data-q="${esc(q)}"><b>${esc(l)}</b>${esc(q)}</button>`).join('');
+$('#testList').querySelectorAll('button').forEach(b => b.onclick = () => send(b.dataset.q));
+
+// HU003
+const PRESETS = [
+  ['Solicitud: Pruebas de migración de plastificante', 'Pruebas de migración de plastificante. Comparar materiales de la competencia frente al becerro. No subir temperaturas a más de 80 °C.'],
+  ['Solicitud: Validación plastificantes', 'Validación de plastificantes: comparar un aditivo polimérico frente a las muestras usadas en los patrones de referencia, evaluando densidades y reología.'],
+  ['Ampollas en recubrimiento PU', 'ampollas en recubrimiento de poliuretano sobre tejido'],
+  ['Sin antecedentes (CA3)', 'cuero de origen vegetal']
+];
+$('#antPresets').innerHTML = PRESETS.map(([l], i) => `<button class="chip" type="button" data-i="${i}">${esc(l)}</button>`).join('');
+$('#antPresets').querySelectorAll('.chip').forEach(c => c.onclick = () => { $('#antQ').value = PRESETS[c.dataset.i][1]; runAnt(); });
+function runAnt() {
+  const q = $('#antQ').value.trim(); if (!q) return;
+  const {r, list} = antecedentes(q);
+  if (!list.length) { $('#antOut').innerHTML = `<div class="empty"><b>${esc(NO_ANTEC)}.</b><br>Prueba reformular la consulta con el material, el proceso o la propiedad (por ejemplo, «abrasión en tapicería» o «burbujas en recubrimiento»).</div>`; return; }
+  const top = list[0].score;
+  $('#antOut').innerHTML = `<p class="small" style="margin-top:12px">${list.length} documento(s) relacionado(s), ordenados por relación con la consulta.</p>` + list.map((x, i) => {
+    const best = x.scored.find(s => s.hits.length) || x.scored[0];
+    const ratio = x.score / top, rel = ratio > 0.75 ? ['Alta', 'b-ok'] : ratio > 0.45 ? ['Media', 'b-info'] : ['Baja', 'b-warn'];
+    return `<div class="res"><div class="pos">${i + 1}</div><div>
+      <h4>${esc(x.d.id)} · ${esc(x.d.tipo)} · ${esc(x.d.tema)} <span class="badge ${rel[1]}">Relación ${rel[0]}</span></h4>
+      <div class="m">${esc(x.d.material)} · ${esc(x.d.version)} · ${esc(x.d.fecha)} · ${docLink(x.d)}</div>
+      <blockquote>«${highlight(best.c.text, r.spec)}»<div class="m">Fragmento citado de: ${esc(best.c.sec)}</div></blockquote></div></div>`;
+  }).join('');
+}
+$('#antBtn').onclick = runAnt;
+$('#ca2Btn').onclick = () => {
+  let ok = 0;
+  const rows = CA2_SET.map((t, i) => {
+    const ids = antecedentes(t.q).list.map(x => x.d.id), pos = ids.indexOf(t.exp) + 1;
+    if (pos) ok++;
+    return `<tr><td>${i + 1}</td><td>${esc(t.q)}</td><td>${t.exp}</td><td>${esc(ids.join(', ') || '—')}</td><td>${pos ? `<span class="badge b-ok">Sí · posición ${pos}</span>` : '<span class="badge b-bad">No</span>'}</td></tr>`;
+  }).join('');
+  const rate = Math.round(ok / CA2_SET.length * 100);
+  $('#antOut').innerHTML = `<h2 style="margin-top:14px">Set de validación HU003 · CA2</h2><div class="tbl"><table><thead><tr><th>#</th><th>Consulta</th><th>Esperado</th><th>Documentos devueltos</th><th>Aparece</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="alert ${rate >= 80 ? 'b-ok' : 'b-bad'}"><b>Tasa de recuperación: ${ok}/${CA2_SET.length} = ${rate} %</b> (meta ≥ 80 %). ${rate >= 80 ? 'Cumple.' : 'No cumple.'}</div>`;
+};
+
+// HU004
+const STATUS = {
+  indexado: ['Indexado', 'b-ok'], excluido: ['Excluido del índice', 'b-bad'], pendiente: ['No cargado', 'b-warn'],
+  cargado: ['Cargado · pendiente de sincronizar', 'b-info'], rechazado: ['Rechazado · metadatos incompletos', 'b-bad']
+};
+const LIBNAME = {aut: 'Corpus autorizado I+D', rev: 'Documentos en revisión', pru: '— (carpeta de pruebas)'};
+const missing = d => [['Versión', d.version], ['Fecha de publicación', d.fecha], ['Estado de autorización', d.estado], ['Aprobado por', d.aprob]].filter(x => !x[1]).map(x => x[0]);
+function logMsg(t) { const now = new Date().toLocaleTimeString('es-CO'); $('#log').innerHTML = `<div>${now} · ${esc(t)}</div>` + $('#log').innerHTML; }
+function corpusMsg(html, cls) { $('#corpusMsg').innerHTML = `<div class="alert ${cls}">${html}</div>`; }
+function renderCorpus() {
+  $('#corpusRows').innerHTML = DOCS.map(d => {
+    const miss = missing(d), st = STATUS[d.status];
+    const lib = d.status === 'cargado' || (d.lib === 'pru' && d.status === 'indexado') ? 'Corpus autorizado I+D' : LIBNAME[d.lib];
+    let act = '';
+    if (d.status === 'pendiente') act = `<button class="btn sec" type="button" data-up="${d.id}">Cargar en Corpus autorizado</button>`;
+    return `<tr><td><b>${d.id}</b></td><td>${esc(d.file)}</td><td>${esc(lib)}</td><td>${miss.length ? `<span class="badge b-bad">Faltan: ${esc(miss.join(', '))}</span>` : '<span class="badge b-ok">Completos</span>'}${d.lib === 'rev' ? '<br><span class="small">Estado: En revisión</span>' : ''}</td><td><span class="badge ${st[1]}">${st[0]}</span></td><td>${act}</td></tr>`;
+  }).join('');
+  document.querySelectorAll('[data-up]').forEach(b => b.onclick = () => upload(DOCS.find(d => d.id === b.dataset.up)));
+}
+function upload(d) {
+  const miss = missing(d);
+  if (miss.length) {
+    d.status = 'rechazado';
+    corpusMsg(`<b>No se puede guardar ${esc(d.id)} en «Corpus autorizado I+D».</b> Faltan campos obligatorios: ${esc(miss.join(', '))}. El documento no entra al corpus (HU004 · CA5).`, 'b-bad');
+    logMsg(`${d.id}: carga rechazada por metadatos incompletos (${miss.join(', ')}).`);
+  } else {
+    d.status = 'cargado';
+    corpusMsg(`<b>${esc(d.id)} cargado</b> con metadatos completos. Queda consultable cuando termine la sincronización.`, 'b-info');
+    logMsg(`${d.id}: cargado en Corpus autorizado I+D, pendiente de sincronizar.`);
+  }
+  renderCorpus();
+}
+$('#syncBtn').onclick = () => {
+  const btn = $('#syncBtn'), bar = $('#bar'), fill = bar.querySelector('i');
+  btn.disabled = true; bar.style.display = 'block'; fill.style.width = '0';
+  logMsg('Sincronización iniciada.');
+  requestAnimationFrame(() => requestAnimationFrame(() => fill.style.width = '100%'));
+  setTimeout(() => {
+    const nuevos = DOCS.filter(d => d.status === 'cargado');
+    nuevos.forEach(d => d.status = 'indexado');
+    btn.disabled = false; bar.style.display = 'none';
+    const txt = nuevos.length ? `Sincronización completada: ${nuevos.map(d => d.id).join(', ')} indexado(s) y disponible(s) para consulta (HU004 · CA4).` : 'Sincronización completada: no hay documentos nuevos.';
+    corpusMsg(esc(txt), 'b-ok'); logMsg(txt); renderCorpus();
+  }, 3100);
+};
+$('#resetBtn').onclick = () => { resetStatus(); $('#corpusMsg').innerHTML = ''; logMsg('Demostración restablecida.'); renderCorpus(); welcome(); };
+$('#libUrl').value = LIB_URL;
+$('#saveUrl').onclick = () => { LIB_URL = $('#libUrl').value.trim(); store('copilotid.libUrl', LIB_URL); corpusMsg('URL guardada. Los enlaces de las fuentes abrirán los documentos en SharePoint.', 'b-ok'); };
+
+renderCorpus(); welcome();
+</script>
+</body>
+</html>
